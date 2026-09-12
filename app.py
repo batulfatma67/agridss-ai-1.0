@@ -77,13 +77,22 @@ def darken_color(color, factor=0.68):
 
 
 def apply_app_theme(background_color, night_mode, compact_page, home_page):
-    app_background = "#10251a" if night_mode else background_color
-    surface_color = "#173524" if night_mode else "#ffffff"
-    sidebar_color = "#252d33" if night_mode else darken_color(app_background)
+    app_background = "#252d33" if night_mode else background_color
+    surface_color = "#303840" if night_mode else "#ffffff"
+    sidebar_color = "#1c242a" if night_mode else darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
     if home_page:
         text_color = "#f8fafc" if night_mode else "#000000"
     sidebar_text_color = get_text_color(sidebar_color, night_mode)
+    hero_overlay_start = (
+        "rgba(37, 45, 51, 0.96)" if night_mode else "rgba(240, 247, 241, 0.97)"
+    )
+    hero_overlay_mid = (
+        "rgba(37, 45, 51, 0.82)" if night_mode else "rgba(240, 247, 241, 0.82)"
+    )
+    hero_overlay_end = (
+        "rgba(37, 45, 51, 0.35)" if night_mode else "rgba(47, 125, 74, 0.22)"
+    )
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
@@ -112,6 +121,9 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
                 --app-primary: #2f7d4a;
                 --app-secondary: #1f5c3a;
                 --app-accent: #d6a72c;
+                --hero-overlay-start: {hero_overlay_start};
+                --hero-overlay-mid: {hero_overlay_mid};
+                --hero-overlay-end: {hero_overlay_end};
             }}
 
             [data-testid="stApp"],
@@ -216,9 +228,9 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .home-hero {{
                 background-image: linear-gradient(
                     90deg,
-                    rgba(240, 247, 241, 0.97) 0%,
-                    rgba(240, 247, 241, 0.82) 42%,
-                    rgba(47, 125, 74, 0.22) 100%
+                    var(--hero-overlay-start) 0%,
+                    var(--hero-overlay-mid) 42%,
+                    var(--hero-overlay-end) 100%
                 ), url("{AGRICULTURE_HERO_IMAGE}");
                 background-position: center right;
                 background-size: cover;
