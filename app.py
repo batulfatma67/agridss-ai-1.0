@@ -84,7 +84,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
     if home_page:
         text_color = "#f8fafc" if night_mode else "#000000"
     sidebar_text_color = get_text_color(sidebar_color, night_mode)
-    table_border_color = "#71808b" if night_mode else "#b8c9bd"
+    table_border_color = "#ffffff" if night_mode else "#b8c9bd"
     table_header_background = "#303840" if night_mode else "#f6faf7"
     hero_overlay_start = (
         "rgba(37, 45, 51, 0.96)" if night_mode else "rgba(240, 247, 241, 0.97)"
