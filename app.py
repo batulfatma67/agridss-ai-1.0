@@ -202,14 +202,14 @@ def apply_app_theme(background_color, night_mode, compact_page):
                 color: var(--app-text);
                 font-size: 42px;
                 line-height: 0.98;
-                margin: 0.45rem 0 0.8rem;
+                margin: 0.25rem 0 0.2rem;
             }}
 
             .home-subtitle {{
                 color: var(--app-text);
                 font-size: 1.15rem;
                 font-weight: 600;
-                margin: 0 0 0.8rem;
+                margin: 0 0 0.45rem;
             }}
 
             .home-hero p {{
