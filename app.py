@@ -63,10 +63,10 @@ def get_text_color(background_color, night_mode):
 
     red, green, blue = hex_to_rgb(background_color)
     luminance = (0.299 * red) + (0.587 * green) + (0.114 * blue)
-    return "#17211b" if luminance > 155 else "#f8fafc"
+    return "#10251a" if luminance > 155 else "#f8fafc"
 
 
-def darken_color(color, factor=0.86):
+def darken_color(color, factor=0.78):
     red, green, blue = hex_to_rgb(color)
     return "#{:02x}{:02x}{:02x}".format(
         max(0, int(red * factor)),
@@ -80,6 +80,7 @@ def apply_app_theme(background_color, night_mode, compact_page):
     surface_color = "#173524" if night_mode else "#ffffff"
     sidebar_color = darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
+    sidebar_text_color = get_text_color(sidebar_color, night_mode)
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
@@ -104,6 +105,7 @@ def apply_app_theme(background_color, night_mode, compact_page):
                 --app-surface: {surface_color};
                 --app-sidebar: {sidebar_color};
                 --app-text: {text_color};
+                --app-sidebar-text: {sidebar_text_color};
                 --app-primary: #2f7d4a;
                 --app-secondary: #1f5c3a;
                 --app-accent: #d6a72c;
@@ -157,23 +159,30 @@ def apply_app_theme(background_color, night_mode, compact_page):
             [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] *,
             [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
             [data-testid="stSidebar"] [data-testid="stWidgetLabel"] * {{
-                color: var(--app-text) !important;
+                color: var(--app-sidebar-text) !important;
             }}
 
             [data-testid="stAppViewContainer"] button,
-            [data-testid="stAppViewContainer"] [data-testid="stButton"] *,
+            [data-testid="stAppViewContainer"] [data-testid="stButton"] * {{
+                color: var(--app-text) !important;
+            }}
+
             [data-testid="stSidebar"] button,
             [data-testid="stSidebar"] [data-testid="stRadio"] * {{
-                color: var(--app-text) !important;
+                color: var(--app-sidebar-text) !important;
             }}
 
             [data-testid="stAppViewContainer"] input,
             [data-testid="stAppViewContainer"] textarea,
-            [data-testid="stAppViewContainer"] [data-baseweb="select"],
+            [data-testid="stAppViewContainer"] [data-baseweb="select"] {{
+                color: var(--app-text);
+                background-color: var(--app-surface);
+            }}
+
             [data-testid="stSidebar"] input,
             [data-testid="stSidebar"] textarea,
             [data-testid="stSidebar"] [data-baseweb="select"] {{
-                color: var(--app-text);
+                color: var(--app-sidebar-text);
                 background-color: var(--app-surface);
             }}
 
