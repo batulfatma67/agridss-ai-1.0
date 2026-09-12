@@ -202,11 +202,18 @@ def apply_app_theme(background_color, night_mode, compact_page):
             }}
 
             .home-hero {{
-                background: linear-gradient(135deg, var(--app-surface), transparent);
+                background-image: linear-gradient(
+                    90deg,
+                    color-mix(in srgb, var(--app-surface) 96%, transparent),
+                    color-mix(in srgb, var(--app-surface) 72%, transparent)
+                ), url("{AGRICULTURE_HERO_IMAGE}");
+                background-position: center;
+                background-size: cover;
                 border: 1px solid rgba(30, 74, 48, 0.18);
                 border-radius: 16px;
-                padding: 1.35rem 1.7rem;
-                margin: 0.25rem 0 0.75rem;
+                min-height: 16rem;
+                padding: 2rem 2.2rem;
+                margin: 0.25rem 0 0.9rem;
             }}
 
             .home-kicker {{
