@@ -21,7 +21,7 @@ BACKGROUND_COLORS = {
 }
 AGRICULTURE_HERO_IMAGE = (
     "https://images.unsplash.com/photo-1492496913980-501348b61469"
-    "?auto=format&fit=crop&w=1800&q=85"
+    "?auto=format&fit=crop&w=2400&q=95&dpr=2"
 )
 
 
