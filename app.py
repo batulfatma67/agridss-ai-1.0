@@ -190,11 +190,17 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             [data-testid="stAppViewContainer"] button,
             [data-testid="stAppViewContainer"] [data-testid="stButton"] * {{
                 color: var(--app-text) !important;
+                background-color: var(--app-surface) !important;
+                border-color: color-mix(in srgb, var(--app-text) 24%, transparent) !important;
             }}
 
             [data-testid="stSidebar"] button,
             [data-testid="stSidebar"] [data-testid="stRadio"] * {{
                 color: var(--app-sidebar-text) !important;
+            }}
+
+            [data-testid="stAppViewContainer"] button:hover {{
+                background-color: color-mix(in srgb, var(--app-primary) 14%, var(--app-surface)) !important;
             }}
 
             [data-testid="stAppViewContainer"] input,
