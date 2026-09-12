@@ -586,7 +586,7 @@ if page == "Home":
     st.markdown(
         """
         <section class="home-hero">
-            <div class="home-kicker">Agricultural decision support</div>
+            <div class="home-kicker">Agricultural Decision Support System</div>
             <h1>AGRIDSS AI</h1>
             <p>
                 Practical farm intelligence in one calm workspace: keep farmer
