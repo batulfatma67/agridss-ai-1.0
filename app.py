@@ -44,13 +44,9 @@ SOIL_TYPE_OPTIONS = [
     "Other",
 ]
 BACKGROUND_COLORS = {
-    "Soft green": "#f0f7f1",
-    "White": "#ffffff",
-    "Light gray": "#f3f5f4",
-    "Sky blue": "#e6f2ff",
-    "Pale yellow": "#fff8db",
-    "Peach": "#fff0e6",
-    "Slate": "#e7edf2",
+    "Soft green": "#F0F7F1",
+    "White": "#FFFFFF",
+    "Light gray": "#F5F7F6",
 }
 AGRICULTURE_HERO_IMAGE = (
     "https://images.unsplash.com/photo-1492496913980-501348b61469"
