@@ -68,17 +68,18 @@ def get_text_color(background_color, night_mode):
 
 def darken_color(color, factor=0.68):
     red, green, blue = hex_to_rgb(color)
+    target_red, target_green, target_blue = (31, 92, 58)
     return "#{:02x}{:02x}{:02x}".format(
-        max(0, int(red * factor)),
-        max(0, int(green * factor)),
-        max(0, int(blue * factor)),
+        int((red * (1 - factor)) + (target_red * factor)),
+        int((green * (1 - factor)) + (target_green * factor)),
+        int((blue * (1 - factor)) + (target_blue * factor)),
     )
 
 
 def apply_app_theme(background_color, night_mode, compact_page, home_page):
     app_background = "#10251a" if night_mode else background_color
     surface_color = "#173524" if night_mode else "#ffffff"
-    sidebar_color = darken_color(app_background)
+    sidebar_color = "#252d33" if night_mode else darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
     if home_page:
         text_color = "#f8fafc" if night_mode else "#000000"
@@ -170,7 +171,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {{
-                font-size: 0.9rem;
+                font-size: 1rem;
                 opacity: 0.9;
             }}
 
