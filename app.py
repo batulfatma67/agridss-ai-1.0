@@ -79,12 +79,12 @@ def apply_app_theme(background_color, night_mode, compact_page):
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
-                padding-top: 1rem;
-                padding-bottom: 1rem;
+                padding-top: 2.75rem;
+                padding-bottom: 1.25rem;
             }
 
             [data-testid="stVerticalBlock"] {
-                gap: 0.5rem;
+                gap: 0.75rem;
             }
 
             [data-testid="stHorizontalBlock"] {
@@ -173,6 +173,8 @@ def apply_app_theme(background_color, night_mode, compact_page):
             .home-clock {{
                 color: var(--app-text);
                 font-size: 0.85rem;
+                line-height: 1.2;
+                margin-bottom: 0.25rem;
                 opacity: 0.72;
                 text-align: right;
             }}
