@@ -10,6 +10,18 @@ import streamlit as st
 FARMER_PROFILES_FILE = Path(__file__).resolve().parent / "data" / "farmer_profiles.json"
 FARM_SIZE_OPTIONS = list(range(0, 1001))
 EXPERIENCE_OPTIONS = list(range(0, 101))
+CROP_GROWTH_STAGE_OPTIONS = [
+    "Select growth stage",
+    "Leaf Development",
+    "Formation of Side Shoots / Tillering",
+    "Stem Elongation",
+    "Booting",
+    "Inflorescence Emergence",
+    "Flowering (Anthesis)",
+    "Fruit / Grain Development",
+    "Ripening",
+    "Senescence",
+]
 BACKGROUND_COLORS = {
     "Soft green": "#f0f7f1",
     "White": "#ffffff",
@@ -846,8 +858,9 @@ elif page == "Farmer Profile":
         with col1:
 
             farmer_name = st.text_input("Farmer Name", key="profile_farmer_name")
-            growth_stage = st.text_input(
+            growth_stage = st.selectbox(
                 "Crop Growth Stage",
+                CROP_GROWTH_STAGE_OPTIONS,
                 key="profile_growth_stage",
             )
             location = st.text_input("Farm Location", key="profile_location")
