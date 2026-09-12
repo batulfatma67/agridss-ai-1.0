@@ -84,6 +84,8 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
     if home_page:
         text_color = "#f8fafc" if night_mode else "#000000"
     sidebar_text_color = get_text_color(sidebar_color, night_mode)
+    table_border_color = "#46515a" if night_mode else "#b8c9bd"
+    table_header_background = "#303840" if night_mode else "#f6faf7"
     hero_overlay_start = (
         "rgba(37, 45, 51, 0.96)" if night_mode else "rgba(240, 247, 241, 0.97)"
     )
@@ -118,6 +120,8 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
                 --app-sidebar: {sidebar_color};
                 --app-text: {text_color};
                 --app-sidebar-text: {sidebar_text_color};
+                --table-border: {table_border_color};
+                --table-header-background: {table_header_background};
                 --app-primary: #2f7d4a;
                 --app-secondary: #1f5c3a;
                 --app-accent: #d6a72c;
@@ -311,7 +315,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .profile-table-header,
             .profile-table-row {{
                 align-items: center;
-                border-bottom: 1px solid color-mix(in srgb, var(--app-text) 14%, transparent);
+                border: 1px solid var(--table-border);
                 display: grid;
                 gap: 0.75rem;
                 grid-template-columns: minmax(130px, 1.2fr) minmax(110px, 1fr) minmax(120px, 1.1fr) minmax(100px, 1fr) minmax(120px, 1fr) minmax(145px, 0.9fr);
@@ -320,6 +324,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             .profile-table-header {{
+                background: var(--table-header-background);
                 color: var(--app-text);
                 font-size: 0.75rem;
                 font-weight: 700;
@@ -329,6 +334,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             .profile-table-row {{
+                border-top: 0;
                 color: var(--app-text);
                 font-size: 0.9rem;
             }}
@@ -343,6 +349,17 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .profile-actions {{
                 display: flex;
                 gap: 0.35rem;
+            }}
+
+            [data-testid="stVerticalBlockBorderWrapper"] {{
+                background: color-mix(in srgb, var(--app-surface) 72%, transparent) !important;
+                border: 1px solid var(--table-border) !important;
+                border-radius: 10px !important;
+                margin-bottom: 0.45rem;
+            }}
+
+            [data-testid="stVerticalBlockBorderWrapper"] > div {{
+                border: 0 !important;
             }}
 
             .assistant-card {{
