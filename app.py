@@ -80,6 +80,9 @@ def apply_app_theme(background_color, night_mode, compact_page):
     surface_color = "#173524" if night_mode else "#ffffff"
     sidebar_color = darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
+    background_overlay = (
+        "rgba(7, 24, 14, 0.72)" if night_mode else "rgba(242, 249, 243, 0.78)"
+    )
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
@@ -114,7 +117,14 @@ def apply_app_theme(background_color, night_mode, compact_page):
             [data-testid="stAppViewContainer"] > .main,
             [data-testid="stMain"],
             [data-testid="stMainBlockContainer"] {{
-                background: var(--app-background) !important;
+                background-color: var(--app-background) !important;
+                background-image: linear-gradient(
+                    {background_overlay},
+                    {background_overlay}
+                ), url("{AGRICULTURE_HERO_IMAGE}") !important;
+                background-position: center;
+                background-size: cover;
+                background-attachment: fixed;
             }}
 
             [data-testid="stSidebar"],
@@ -643,12 +653,6 @@ if page == "Home":
         </section>
         """,
         unsafe_allow_html=True,
-    )
-
-    st.image(
-        AGRICULTURE_HERO_IMAGE,
-        width="stretch",
-        caption="Smarter decisions for healthier crops and more productive farms.",
     )
 
     stat_col1, stat_col2, stat_col3 = st.columns(3)
