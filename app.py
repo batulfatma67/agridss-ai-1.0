@@ -200,14 +200,21 @@ def apply_app_theme(background_color, night_mode, compact_page):
 
             .home-hero h1 {{
                 color: var(--app-text);
-                font-size: clamp(2.2rem, 5vw, 4.5rem);
+                font-size: 42px;
                 line-height: 0.98;
                 margin: 0.45rem 0 0.8rem;
             }}
 
+            .home-subtitle {{
+                color: var(--app-text);
+                font-size: 1.15rem;
+                font-weight: 600;
+                margin: 0 0 0.8rem;
+            }}
+
             .home-hero p {{
                 color: var(--app-text);
-                font-size: 1.05rem;
+                font-size: 1.15rem;
                 margin: 0;
                 max-width: 720px;
                 opacity: 0.82;
@@ -315,6 +322,23 @@ def apply_app_theme(background_color, night_mode, compact_page):
             .assistant-action button {{
                 font-size: 0.78rem;
                 text-transform: capitalize;
+            }}
+
+            .question-list {{
+                display: grid;
+                gap: 0.35rem;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                margin: 0.8rem 0 1.2rem;
+            }}
+
+            .question-list p {{
+                background: var(--app-surface);
+                border: 1px solid color-mix(in srgb, var(--app-text) 14%, transparent);
+                border-radius: 8px;
+                color: var(--app-text);
+                font-size: 0.9rem;
+                margin: 0;
+                padding: 0.65rem 0.8rem;
             }}
 
             {compact_styles}
@@ -425,8 +449,8 @@ if "selected_profile_index" not in st.session_state:
         else None
     )
 
-if "assistant_topic" not in st.session_state:
-    st.session_state.assistant_topic = ""
+if "selected_question" not in st.session_state:
+    st.session_state.selected_question = ""
 
 if "show_farmer_form" not in st.session_state:
     st.session_state.show_farmer_form = False
@@ -436,8 +460,8 @@ def navigate_to(page_name):
     st.session_state.navigation = page_name
 
 
-def select_assistant_topic(topic):
-    st.session_state.assistant_topic = topic
+def select_example_question(question):
+    st.session_state.selected_question = question
 
 
 def close_background_picker():
@@ -481,7 +505,9 @@ def edit_farmer_profile(profile_index):
     st.session_state.show_farmer_form = True
     st.session_state.selected_profile_index = profile_index
     st.session_state.profile_farmer_name = profile.get("Farmer Name", "")
-    st.session_state.profile_phone = profile.get("Phone", "")
+    st.session_state.profile_growth_stage = profile.get(
+        "Crop Growth Stage", ""
+    )
     st.session_state.profile_location = profile.get("Location", "")
     st.session_state.profile_farm_size = int(profile.get("Farm Size", 0))
     st.session_state.profile_crop = profile.get("Primary Crop", "Wheat")
@@ -498,7 +524,7 @@ def edit_farmer_profile(profile_index):
 def clear_profile_form():
     st.session_state.editing_profile_index = None
     st.session_state.profile_farmer_name = ""
-    st.session_state.profile_phone = ""
+    st.session_state.profile_growth_stage = ""
     st.session_state.profile_location = ""
     st.session_state.profile_farm_size = 0.0
     st.session_state.profile_crop = "Wheat"
@@ -587,7 +613,8 @@ if page == "Home":
         """
         <section class="home-hero">
             <div class="home-kicker">Agricultural Decision Support System</div>
-            <h1>AGRIDSS AI</h1>
+            <h1>AgriDSS AI</h1>
+            <div class="home-subtitle">Generative AI Agronomist</div>
             <p>
                 Practical farm intelligence in one calm workspace: keep farmer
                 records organized and get clear guidance for crops, irrigation,
@@ -687,7 +714,10 @@ elif page == "Farmer Profile":
         with col1:
 
             farmer_name = st.text_input("Farmer Name", key="profile_farmer_name")
-            phone = st.text_input("Phone Number", key="profile_phone")
+            growth_stage = st.text_input(
+                "Crop Growth Stage",
+                key="profile_growth_stage",
+            )
             location = st.text_input("Farm Location", key="profile_location")
             farm_size = st.selectbox(
                 "Farm Size (acres)",
@@ -753,7 +783,7 @@ elif page == "Farmer Profile":
 
             profile = {
                 "Farmer Name": farmer_name,
-                "Phone": phone,
+                "Crop Growth Stage": growth_stage,
                 "Location": location,
                 "Farm Size": farm_size,
                 "Primary Crop": crop,
@@ -789,7 +819,7 @@ elif page == "Farmer Profile":
         st.subheader("Saved Farmer Profiles")
         table_columns = [
             "Farmer Name",
-            "Phone",
+            "Crop Growth Stage",
             "Location",
             "Farm Size (acres)",
         ]
@@ -813,7 +843,7 @@ elif page == "Farmer Profile":
                 )
                 row_values = [
                     profile_name,
-                    saved_profile.get("Phone", ""),
+                    saved_profile.get("Crop Growth Stage", ""),
                     saved_profile.get("Location", ""),
                     f"{saved_profile.get('Farm Size', 0):g} acres",
                 ]
@@ -871,7 +901,7 @@ elif page == "Farmer Profile":
                 f"**Farmer:** {profile.get('Farmer Name', '')}"
             )
             st.write(
-                f"**Phone:** {profile.get('Phone', '')}"
+                f"**Crop Growth Stage:** {profile.get('Crop Growth Stage', '')}"
             )
             st.write(
                 f"**Location:** {profile.get('Location', '')}"
@@ -907,69 +937,34 @@ elif page == "AI Chat":
     st.title("AI Agricultural Assistant")
 
     st.write(
-        "Ask questions about farming and agricultural practices."
+        "Ask your AI Agronomist about crops, irrigation, fertilizer, pests, diseases, or crop management."
     )
 
-    st.subheader("Choose an advisor")
-    assistant_cards = [
-        (
-            "crop_advisor",
-            "grass",
-            "Crop Advisor",
-            "Choose crops, plan planting, and improve seasonal decisions.",
-            "Crop Advisor",
-        ),
-        (
-            "pest_advisor",
-            "bug_report",
-            "Pest & Disease Help",
-            "Identify common crop threats and explore practical next steps.",
-            "Pest and Disease Advisor",
-        ),
-        (
-            "irrigation_advisor",
-            "water_drop",
-            "Irrigation Advisor",
-            "Plan watering schedules and choose efficient irrigation methods.",
-            "Irrigation Advisor",
-        ),
-        (
-            "fertilizer_advisor",
-            "compost",
-            "Fertilizer Advisor",
-            "Understand soil nutrition, application timing, and crop needs.",
-            "Fertilizer Advisor",
-        ),
-    ]
-    card_columns = st.columns(4, gap="small")
-    for card_column, (key, icon, title, description, topic) in zip(
-        card_columns, assistant_cards
-    ):
-        with card_column:
-            st.markdown(
-                f"""
-                <div class="assistant-card">
-                    <div class="assistant-card-icon">
-                        <span class="material-symbols-rounded">{icon}</span>
-                    </div>
-                    <h3>{title}</h3>
-                    <p>{description}</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            with st.container(key=f"assistant_action_{key}"):
-                st.button(
-                    f"Ask {title}",
-                    key=f"assistant_topic_{key}",
-                    width="stretch",
-                    on_click=select_assistant_topic,
-                    args=(topic,),
-                )
+    st.subheader("🌱 Ask Your AI Agronomist")
+    st.write(
+        "Ask about crops, irrigation, fertilizer, pests, diseases, or farm management."
+    )
 
-    if st.session_state.assistant_topic:
+    example_questions = [
+        ("💧", "When should I irrigate my wheat crop?"),
+        ("🌾", "My wheat leaves are turning yellow. What should I check first?"),
+        ("💧", "How often should I irrigate maize?"),
+        ("🐛", "How can I identify common cotton pests?"),
+    ]
+    question_columns = st.columns(2, gap="small")
+    for question_index, (icon, question) in enumerate(example_questions):
+        with question_columns[question_index % 2]:
+            st.button(
+                f"{icon}  {question}",
+                key=f"example_question_{question_index}",
+                width="stretch",
+                on_click=select_example_question,
+                args=(question,),
+            )
+
+    if st.session_state.selected_question:
         st.info(
-            f"{st.session_state.assistant_topic} selected. Ask your question below.",
+            f"Example selected: {st.session_state.selected_question}",
             icon=":material/chat:",
         )
 
