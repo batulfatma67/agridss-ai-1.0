@@ -459,6 +459,24 @@ def get_openai_model():
     return get_openai_setting("model") or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
+def get_ai_model(api_key):
+    configured_model = get_openai_model()
+    if api_key.startswith("gsk_") and configured_model == "gpt-4o-mini":
+        return "llama-3.3-70b-versatile"
+    return configured_model
+
+
+def get_ai_base_url(api_key):
+    configured_base_url = (
+        get_openai_setting("base_url") or os.getenv("OPENAI_BASE_URL")
+    )
+    if configured_base_url:
+        return configured_base_url
+    if api_key.startswith("gsk_"):
+        return "https://api.groq.com/openai/v1"
+    return None
+
+
 def get_ai_response(messages):
     api_key = get_openai_api_key()
     if not api_key:
@@ -470,9 +488,13 @@ def get_ai_response(messages):
     try:
         from openai import OpenAI
 
-        client = OpenAI(api_key=api_key)
+        client_options = {"api_key": api_key}
+        base_url = get_ai_base_url(api_key)
+        if base_url:
+            client_options["base_url"] = base_url
+        client = OpenAI(**client_options)
         response = client.chat.completions.create(
-            model=get_openai_model(),
+            model=get_ai_model(api_key),
             messages=[
                 {
                     "role": "system",

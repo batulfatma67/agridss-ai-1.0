@@ -15,6 +15,8 @@ streamlit run app.py
 The app reads `OPENAI_API_KEY` and `OPENAI_MODEL` from Streamlit secrets. It
 also accepts the `OPENAI_API_KEY` and `OPENAI_MODEL` environment variables. If
 neither is configured, the sidebar provides a masked, session-only key field.
+Groq keys beginning with `gsk_` are routed automatically to Groq's
+OpenAI-compatible API and use `llama-3.3-70b-versatile` by default.
 
 For Streamlit Community Cloud, paste the contents of the template into the
 app's **Settings > Secrets** panel and replace the placeholder. The app uses
