@@ -75,11 +75,13 @@ def darken_color(color, factor=0.78):
     )
 
 
-def apply_app_theme(background_color, night_mode, compact_page):
+def apply_app_theme(background_color, night_mode, compact_page, home_page):
     app_background = "#10251a" if night_mode else background_color
     surface_color = "#173524" if night_mode else "#ffffff"
     sidebar_color = darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
+    if home_page:
+        text_color = "#f8fafc" if night_mode else "#000000"
     sidebar_text_color = get_text_color(sidebar_color, night_mode)
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
@@ -632,6 +634,7 @@ apply_app_theme(
     st.session_state.background_color,
     st.session_state.night_mode,
     st.session_state.compact_page,
+    page == "Home",
 )
 
 
