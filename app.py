@@ -186,8 +186,8 @@ def apply_app_theme(background_color, night_mode, compact_page):
                 background: linear-gradient(135deg, var(--app-surface), transparent);
                 border: 1px solid rgba(30, 74, 48, 0.18);
                 border-radius: 16px;
-                padding: 2.2rem 2.4rem;
-                margin: 0.5rem 0 1.2rem;
+                padding: 1.35rem 1.7rem;
+                margin: 0.25rem 0 0.75rem;
             }}
 
             .home-kicker {{
@@ -200,24 +200,25 @@ def apply_app_theme(background_color, night_mode, compact_page):
 
             .home-hero h1 {{
                 color: var(--app-text);
-                font-size: 42px;
+                font-size: 38px;
                 line-height: 0.9;
                 margin: 0.1rem 0 0;
             }}
 
             .home-subtitle {{
                 color: var(--app-text);
-                font-size: 1.15rem;
+                font-size: 1rem;
                 font-weight: 600;
                 line-height: 1.1;
-                margin: 0 0 0.25rem;
+                margin: 0 0 0.35rem;
             }}
 
             .home-hero p {{
                 color: var(--app-text);
-                font-size: 1.15rem;
+                font-size: 1rem;
+                line-height: 1.4;
                 margin: 0;
-                max-width: 720px;
+                max-width: 780px;
                 opacity: 0.82;
             }}
 
@@ -225,19 +226,28 @@ def apply_app_theme(background_color, night_mode, compact_page):
                 background: var(--app-surface);
                 border-left: 4px solid #2f8f5b;
                 border-radius: 8px;
-                padding: 0.85rem 1rem;
+                padding: 0.55rem 0.8rem;
             }}
 
             .home-stat strong {{
                 color: var(--app-text);
                 display: block;
-                font-size: 1.45rem;
+                font-size: 1.2rem;
             }}
 
             .home-stat span {{
                 color: var(--app-text);
-                font-size: 0.82rem;
+                font-size: 0.76rem;
                 opacity: 0.72;
+            }}
+
+            [data-testid="stAppViewContainer"] h2 {{
+                font-size: 1.25rem;
+                margin: 0.7rem 0 0.35rem;
+            }}
+
+            [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {{
+                font-size: 0.78rem;
             }}
 
             .profile-table-header,
