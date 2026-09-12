@@ -194,9 +194,9 @@ def apply_app_theme(background_color, night_mode, compact_page):
             .home-hero {{
                 background-image: linear-gradient(
                     90deg,
-                    rgba(255, 255, 255, 0.98) 0%,
-                    rgba(255, 255, 255, 0.88) 42%,
-                    rgba(255, 255, 255, 0.18) 100%
+                    rgba(240, 247, 241, 0.97) 0%,
+                    rgba(240, 247, 241, 0.82) 42%,
+                    rgba(47, 125, 74, 0.22) 100%
                 ), url("{AGRICULTURE_HERO_IMAGE}");
                 background-position: center right;
                 background-size: cover;
