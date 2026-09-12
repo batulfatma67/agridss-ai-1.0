@@ -66,7 +66,7 @@ def get_text_color(background_color, night_mode):
     return "#10251a" if luminance > 155 else "#f8fafc"
 
 
-def darken_color(color, factor=0.78):
+def darken_color(color, factor=0.68):
     red, green, blue = hex_to_rgb(color)
     return "#{:02x}{:02x}{:02x}".format(
         max(0, int(red * factor)),
@@ -152,6 +152,11 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] *,
             [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"],
             [data-testid="stAppViewContainer"] [data-testid="stWidgetLabel"] *,
+            [data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] *,
+            [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {{
+                color: var(--app-text) !important;
+            }}
+
             [data-testid="stSidebar"] h1,
             [data-testid="stSidebar"] h2,
             [data-testid="stSidebar"] h3,
@@ -162,6 +167,11 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
             [data-testid="stSidebar"] [data-testid="stWidgetLabel"] * {{
                 color: var(--app-sidebar-text) !important;
+            }}
+
+            [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {{
+                font-size: 0.9rem;
+                opacity: 0.9;
             }}
 
             [data-testid="stAppViewContainer"] button,
