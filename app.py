@@ -11,14 +11,18 @@ FARMER_PROFILES_FILE = Path(__file__).resolve().parent / "data" / "farmer_profil
 FARM_SIZE_OPTIONS = list(range(0, 1001))
 EXPERIENCE_OPTIONS = list(range(0, 101))
 BACKGROUND_COLORS = {
-    "Soft green": "#e8f3e8",
+    "Soft green": "#f0f7f1",
     "White": "#ffffff",
-    "Light gray": "#f1f3f5",
+    "Light gray": "#f3f5f4",
     "Sky blue": "#e6f2ff",
     "Pale yellow": "#fff8db",
     "Peach": "#fff0e6",
     "Slate": "#e7edf2",
 }
+AGRICULTURE_HERO_IMAGE = (
+    "https://images.unsplash.com/photo-1492496913980-501348b61469"
+    "?auto=format&fit=crop&w=1800&q=85"
+)
 
 
 def load_farmer_profiles():
@@ -72,8 +76,8 @@ def darken_color(color, factor=0.86):
 
 
 def apply_app_theme(background_color, night_mode, compact_page):
-    app_background = "#0b1712" if night_mode else background_color
-    surface_color = "#101a16" if night_mode else "#ffffff"
+    app_background = "#10251a" if night_mode else background_color
+    surface_color = "#173524" if night_mode else "#ffffff"
     sidebar_color = darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
     compact_styles = """
@@ -100,6 +104,9 @@ def apply_app_theme(background_color, night_mode, compact_page):
                 --app-surface: {surface_color};
                 --app-sidebar: {sidebar_color};
                 --app-text: {text_color};
+                --app-primary: #2f7d4a;
+                --app-secondary: #1f5c3a;
+                --app-accent: #d6a72c;
             }}
 
             [data-testid="stApp"],
@@ -193,7 +200,7 @@ def apply_app_theme(background_color, night_mode, compact_page):
             }}
 
             .home-kicker {{
-                color: #2f8f5b;
+                color: var(--app-primary);
                 font-size: 0.78rem;
                 font-weight: 700;
                 letter-spacing: 0.12em;
@@ -226,7 +233,7 @@ def apply_app_theme(background_color, night_mode, compact_page):
 
             .home-stat {{
                 background: var(--app-surface);
-                border-left: 4px solid #2f8f5b;
+                border-left: 4px solid var(--app-primary);
                 border-radius: 8px;
                 padding: 0.55rem 0.8rem;
             }}
@@ -299,9 +306,9 @@ def apply_app_theme(background_color, night_mode, compact_page):
 
             .assistant-card-icon {{
                 align-items: center;
-                background: color-mix(in srgb, #2f8f5b 18%, transparent);
+                background: color-mix(in srgb, var(--app-primary) 18%, transparent);
                 border-radius: 8px;
-                color: #2f8f5b;
+                color: var(--app-primary);
                 display: flex;
                 font-size: 1.2rem;
                 height: 2.3rem;
@@ -441,7 +448,7 @@ if "night_mode" not in st.session_state:
     st.session_state.night_mode = False
 
 if "background_color" not in st.session_state:
-    st.session_state.background_color = "#e8f3e8"
+    st.session_state.background_color = BACKGROUND_COLORS["Soft green"]
 
 if "background_color_name" not in st.session_state:
     st.session_state.background_color_name = "Soft green"
@@ -636,6 +643,12 @@ if page == "Home":
         </section>
         """,
         unsafe_allow_html=True,
+    )
+
+    st.image(
+        AGRICULTURE_HERO_IMAGE,
+        width="stretch",
+        caption="Smarter decisions for healthier crops and more productive farms.",
     )
 
     stat_col1, stat_col2, stat_col3 = st.columns(3)
