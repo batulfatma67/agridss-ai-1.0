@@ -1068,11 +1068,7 @@ elif page == "AI Chat":
 
     st.title("AI Agricultural Assistant")
 
-    st.write(
-        "Ask your AI Agronomist about crops, irrigation, fertilizer, pests, diseases, or crop management."
-    )
-
-    st.subheader("🌱 Ask Your AI Agronomist")
+    st.subheader("🌱 Focused Agronomist Consultation")
     st.write(
         "Ask about crops, irrigation, fertilizer, pests, diseases, or farm management."
     )
@@ -1100,12 +1096,6 @@ elif page == "AI Chat":
             icon=":material/chat:",
         )
 
-    # Display existing messages
-    for message in st.session_state.messages:
-
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
-
     prompt = st.chat_input(
         "Ask an agricultural question..."
     )
@@ -1120,9 +1110,6 @@ elif page == "AI Chat":
             }
         )
 
-        with st.chat_message("user"):
-            st.write(prompt)
-
         response = get_ai_response(st.session_state.messages)
 
         st.session_state.messages.append(
@@ -1132,5 +1119,7 @@ elif page == "AI Chat":
             }
         )
 
-        with st.chat_message("assistant"):
-            st.write(response)
+    st.caption("Showing your latest consultation. Previous exchanges remain saved.")
+    for message in st.session_state.messages[-2:]:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
