@@ -35,7 +35,7 @@ def get_agricultural_context(question, k=3):
 
 # 3. Quick Test Run
 if __name__ == "__main__":
-    test_question = "My wheat leaves are turning yellow. What could be the possible causes?"
+    test_question = "What are the common root diseases in maize caused by poor soil quality or poor aeration, and what are their symptoms?"
     
     print("\n--- RETRIEVED CONTEXT FOR LLM ---")
     retrieved_data = get_agricultural_context(test_question)
