@@ -84,7 +84,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
     if home_page:
         text_color = "#f8fafc" if night_mode else "#000000"
     sidebar_text_color = get_text_color(sidebar_color, night_mode)
-    table_border_color = "#46515a" if night_mode else "#b8c9bd"
+    table_border_color = "#71808b" if night_mode else "#b8c9bd"
     table_header_background = "#303840" if night_mode else "#f6faf7"
     hero_overlay_start = (
         "rgba(37, 45, 51, 0.96)" if night_mode else "rgba(240, 247, 241, 0.97)"
@@ -355,6 +355,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
                 background: color-mix(in srgb, var(--app-surface) 72%, transparent) !important;
                 border: 1px solid var(--table-border) !important;
                 border-radius: 10px !important;
+                box-shadow: 0 0 0 1px color-mix(in srgb, var(--table-border) 35%, transparent) inset !important;
                 margin-bottom: 0.45rem;
             }}
 
