@@ -1,10 +1,18 @@
 import json
 import os
+import re
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from xml.sax.saxutils import escape
 
 import streamlit as st
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 FARMER_PROFILES_FILE = Path(__file__).resolve().parent / "data" / "farmer_profiles.json"
@@ -21,6 +29,19 @@ CROP_GROWTH_STAGE_OPTIONS = [
     "Fruit / Grain Development",
     "Ripening",
     "Senescence",
+]
+SOIL_TYPE_OPTIONS = [
+    "Select soil type",
+    "Loamy",
+    "Sandy",
+    "Clay",
+    "Silty",
+    "Peaty",
+    "Chalky",
+    "Saline",
+    "Alluvial",
+    "Rocky",
+    "Other",
 ]
 BACKGROUND_COLORS = {
     "Soft green": "#f0f7f1",
@@ -524,6 +545,156 @@ def get_ai_response(messages):
         return f"I could not reach OpenAI right now: {error}"
 
 
+def create_consultation_pdf(question, answer):
+    pdf_buffer = BytesIO()
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "ConsultationTitle",
+        parent=styles["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=16,
+        leading=20,
+        alignment=TA_LEFT,
+        spaceAfter=18,
+    )
+    section_style = ParagraphStyle(
+        "ConsultationSection",
+        parent=styles["Heading2"],
+        fontName="Helvetica-Bold",
+        fontSize=12,
+        leading=15,
+        spaceBefore=8,
+        spaceAfter=6,
+    )
+    heading_style = ParagraphStyle(
+        "ConsultationHeading",
+        parent=styles["Heading3"],
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=13,
+        spaceBefore=6,
+        spaceAfter=3,
+    )
+    body_style = ParagraphStyle(
+        "ConsultationBody",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=10,
+        leading=14,
+        spaceAfter=6,
+    )
+    bullet_style = ParagraphStyle(
+        "ConsultationBullet",
+        parent=body_style,
+        leftIndent=14,
+        firstLineIndent=-8,
+    )
+    table_header_style = ParagraphStyle(
+        "ConsultationTableHeader",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        spaceAfter=0,
+    )
+
+    def is_table_separator(line):
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
+
+    def parse_table_row(line):
+        return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+    def inline_markdown(value):
+        value = escape(value.encode("latin-1", "replace").decode("latin-1"))
+        value = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", value)
+        value = re.sub(r"__(.+?)__", r"<b>\1</b>", value)
+        value = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<i>\1</i>", value)
+        return value
+
+    def markdown_flowables(markdown_text):
+        flowables = []
+        lines = markdown_text.splitlines()
+        line_index = 0
+        while line_index < len(lines):
+            raw_line = lines[line_index]
+            line = raw_line.strip()
+            if not line:
+                flowables.append(Spacer(1, 5))
+                line_index += 1
+                continue
+            if (
+                "|" in line
+                and line_index + 1 < len(lines)
+                and is_table_separator(lines[line_index + 1])
+            ):
+                table_rows = [parse_table_row(line)]
+                line_index += 2
+                while line_index < len(lines) and "|" in lines[line_index]:
+                    table_rows.append(parse_table_row(lines[line_index]))
+                    line_index += 1
+                column_count = max(len(row) for row in table_rows)
+                normalized_rows = [
+                    row + [""] * (column_count - len(row)) for row in table_rows
+                ]
+                table_data = [
+                    [
+                        Paragraph(inline_markdown(cell), table_header_style if row_index == 0 else body_style)
+                        for cell in row
+                    ]
+                    for row_index, row in enumerate(normalized_rows)
+                ]
+                table = Table(
+                    table_data,
+                    colWidths=[(letter[0] - 108) / column_count] * column_count,
+                    repeatRows=1,
+                    hAlign="LEFT",
+                    spaceBefore=6,
+                    spaceAfter=10,
+                )
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eaf2ec")),
+                            ("GRID", (0, 0), (-1, -1), 0.6, colors.HexColor("#8da394")),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                            ("TOPPADDING", (0, 0), (-1, -1), 5),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                        ]
+                    )
+                )
+                flowables.append(table)
+                continue
+            heading_match = re.match(r"^#{1,6}\s*(.*)$", line)
+            if heading_match:
+                flowables.append(Paragraph(inline_markdown(heading_match.group(1)), heading_style))
+            elif re.match(r"^[-*]\s+", line):
+                bullet_text = re.sub(r"^[-*]\s+", "", line)
+                flowables.append(Paragraph(f"&bull; {inline_markdown(bullet_text)}", bullet_style))
+            else:
+                flowables.append(Paragraph(inline_markdown(line), body_style))
+            line_index += 1
+        return flowables
+
+    document = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=letter,
+        leftMargin=54,
+        rightMargin=54,
+        topMargin=54,
+        bottomMargin=54,
+    )
+    story = [
+        Paragraph("AgriDSS AI - Latest Agronomist Consultation", title_style),
+        Paragraph("Question", section_style),
+        Paragraph(inline_markdown(question), body_style),
+        Paragraph("Answer", section_style),
+        *markdown_flowables(answer),
+    ]
+    document.build(story)
+    return pdf_buffer.getvalue()
+
+
 # ---------------------------------------------------------
 # PAGE CONFIGURATION
 # ---------------------------------------------------------
@@ -642,6 +813,9 @@ def edit_farmer_profile(profile_index):
     )
     st.session_state.profile_location = profile.get("Location", "")
     st.session_state.profile_farm_size = int(profile.get("Farm Size", 0))
+    st.session_state.profile_soil_type = profile.get(
+        "Soil Type", "Select soil type"
+    )
     st.session_state.profile_crop = profile.get("Primary Crop", "Wheat")
     st.session_state.profile_irrigation = profile.get(
         "Irrigation", "Rain-fed"
@@ -659,6 +833,7 @@ def clear_profile_form():
     st.session_state.profile_growth_stage = ""
     st.session_state.profile_location = ""
     st.session_state.profile_farm_size = 0.0
+    st.session_state.profile_soil_type = "Select soil type"
     st.session_state.profile_crop = "Wheat"
     st.session_state.profile_irrigation = "Rain-fed"
     st.session_state.profile_experience = 0
@@ -858,19 +1033,25 @@ elif page == "Farmer Profile":
         with col1:
 
             farmer_name = st.text_input("Farmer Name", key="profile_farmer_name")
-            growth_stage = st.selectbox(
-                "Crop Growth Stage",
-                CROP_GROWTH_STAGE_OPTIONS,
-                key="profile_growth_stage",
-            )
             location = st.text_input("Farm Location", key="profile_location")
             farm_size = st.selectbox(
                 "Farm Size (acres)",
                 FARM_SIZE_OPTIONS,
                 key="profile_farm_size",
             )
+            soil_type = st.selectbox(
+                "Soil Type",
+                SOIL_TYPE_OPTIONS,
+                key="profile_soil_type",
+            )
 
         with col2:
+
+            growth_stage = st.selectbox(
+                "Crop Growth Stage",
+                CROP_GROWTH_STAGE_OPTIONS,
+                key="profile_growth_stage",
+            )
 
             crop = st.selectbox(
                 "Primary Crop",
@@ -931,6 +1112,7 @@ elif page == "Farmer Profile":
                 "Crop Growth Stage": growth_stage,
                 "Location": location,
                 "Farm Size": farm_size,
+                "Soil Type": soil_type,
                 "Primary Crop": crop,
                 "Irrigation": irrigation,
                 "Experience": experience,
@@ -964,9 +1146,9 @@ elif page == "Farmer Profile":
         st.subheader("Saved Farmer Profiles")
         table_columns = [
             "Farmer Name",
-            "Crop Growth Stage",
             "Location",
             "Farm Size (acres)",
+            "Soil Type",
         ]
         with st.container(border=True):
             header_columns = st.columns(
@@ -988,9 +1170,9 @@ elif page == "Farmer Profile":
                 )
                 row_values = [
                     profile_name,
-                    saved_profile.get("Crop Growth Stage", ""),
                     saved_profile.get("Location", ""),
                     f"{saved_profile.get('Farm Size', 0):g} acres",
+                    saved_profile.get("Soil Type", "Select soil type"),
                 ]
                 for row_column, value in zip(row_columns[:4], row_values):
                     row_column.write(value)
@@ -1155,16 +1337,12 @@ elif page == "AI Chat":
             ),
             "",
         )
-        download_content = (
-            "AgriDSS AI - Latest Agronomist Consultation\n\n"
-            f"Question\n{latest_question}\n\n"
-            f"Answer\n{latest_answer}\n"
-        )
+        download_content = create_consultation_pdf(latest_question, latest_answer)
         st.download_button(
             "Download latest result",
             data=download_content,
-            file_name="agridss-latest-consultation.txt",
-            mime="text/plain",
+            file_name="agridss-latest-consultation.pdf",
+            mime="application/pdf",
             icon=":material/download:",
             width="stretch",
         )
