@@ -1,23 +1,52 @@
 import json
 import os
+import re
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from xml.sax.saxutils import escape
 
 import streamlit as st
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
 FARMER_PROFILES_FILE = Path(__file__).resolve().parent / "data" / "farmer_profiles.json"
 FARM_SIZE_OPTIONS = list(range(0, 1001))
 EXPERIENCE_OPTIONS = list(range(0, 101))
+CROP_GROWTH_STAGE_OPTIONS = [
+    "Select growth stage",
+    "Leaf Development",
+    "Formation of Side Shoots / Tillering",
+    "Stem Elongation",
+    "Booting",
+    "Inflorescence Emergence",
+    "Flowering (Anthesis)",
+    "Fruit / Grain Development",
+    "Ripening",
+    "Senescence",
+]
+SOIL_TYPE_OPTIONS = [
+    "Select soil type",
+    "Loamy",
+    "Sandy",
+    "Clay",
+    "Silty",
+    "Peaty",
+    "Chalky",
+    "Saline",
+    "Alluvial",
+    "Rocky",
+    "Other",
+]
 BACKGROUND_COLORS = {
-    "Soft green": "#f0f7f1",
-    "White": "#ffffff",
-    "Light gray": "#f3f5f4",
-    "Sky blue": "#e6f2ff",
-    "Pale yellow": "#fff8db",
-    "Peach": "#fff0e6",
-    "Slate": "#e7edf2",
+    "Soft green": "#F0F7F1",
+    "White": "#FFFFFF",
+    "Light gray": "#F5F7F6",
 }
 AGRICULTURE_HERO_IMAGE = (
     "https://images.unsplash.com/photo-1492496913980-501348b61469"
@@ -68,21 +97,33 @@ def get_text_color(background_color, night_mode):
 
 def darken_color(color, factor=0.68):
     red, green, blue = hex_to_rgb(color)
+    target_red, target_green, target_blue = (31, 92, 58)
     return "#{:02x}{:02x}{:02x}".format(
-        max(0, int(red * factor)),
-        max(0, int(green * factor)),
-        max(0, int(blue * factor)),
+        int((red * (1 - factor)) + (target_red * factor)),
+        int((green * (1 - factor)) + (target_green * factor)),
+        int((blue * (1 - factor)) + (target_blue * factor)),
     )
 
 
 def apply_app_theme(background_color, night_mode, compact_page, home_page):
-    app_background = "#10251a" if night_mode else background_color
-    surface_color = "#173524" if night_mode else "#ffffff"
-    sidebar_color = darken_color(app_background)
+    app_background = "#252d33" if night_mode else background_color
+    surface_color = "#303840" if night_mode else "#ffffff"
+    sidebar_color = "#1c242a" if night_mode else darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
     if home_page:
         text_color = "#f8fafc" if night_mode else "#000000"
     sidebar_text_color = get_text_color(sidebar_color, night_mode)
+    table_border_color = "#ffffff" if night_mode else "#b8c9bd"
+    table_header_background = "#303840" if night_mode else "#f6faf7"
+    hero_overlay_start = (
+        "rgba(37, 45, 51, 0.96)" if night_mode else "rgba(240, 247, 241, 0.97)"
+    )
+    hero_overlay_mid = (
+        "rgba(37, 45, 51, 0.82)" if night_mode else "rgba(240, 247, 241, 0.82)"
+    )
+    hero_overlay_end = (
+        "rgba(37, 45, 51, 0.35)" if night_mode else "rgba(47, 125, 74, 0.22)"
+    )
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
@@ -108,9 +149,14 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
                 --app-sidebar: {sidebar_color};
                 --app-text: {text_color};
                 --app-sidebar-text: {sidebar_text_color};
+                --table-border: {table_border_color};
+                --table-header-background: {table_header_background};
                 --app-primary: #2f7d4a;
                 --app-secondary: #1f5c3a;
                 --app-accent: #d6a72c;
+                --hero-overlay-start: {hero_overlay_start};
+                --hero-overlay-mid: {hero_overlay_mid};
+                --hero-overlay-end: {hero_overlay_end};
             }}
 
             [data-testid="stApp"],
@@ -170,18 +216,24 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             [data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {{
-                font-size: 0.9rem;
+                font-size: 1rem;
                 opacity: 0.9;
             }}
 
             [data-testid="stAppViewContainer"] button,
             [data-testid="stAppViewContainer"] [data-testid="stButton"] * {{
                 color: var(--app-text) !important;
+                background-color: var(--app-surface) !important;
+                border-color: color-mix(in srgb, var(--app-text) 24%, transparent) !important;
             }}
 
             [data-testid="stSidebar"] button,
             [data-testid="stSidebar"] [data-testid="stRadio"] * {{
                 color: var(--app-sidebar-text) !important;
+            }}
+
+            [data-testid="stAppViewContainer"] button:hover {{
+                background-color: color-mix(in srgb, var(--app-primary) 14%, var(--app-surface)) !important;
             }}
 
             [data-testid="stAppViewContainer"] input,
@@ -215,9 +267,9 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .home-hero {{
                 background-image: linear-gradient(
                     90deg,
-                    rgba(240, 247, 241, 0.97) 0%,
-                    rgba(240, 247, 241, 0.82) 42%,
-                    rgba(47, 125, 74, 0.22) 100%
+                    var(--hero-overlay-start) 0%,
+                    var(--hero-overlay-mid) 42%,
+                    var(--hero-overlay-end) 100%
                 ), url("{AGRICULTURE_HERO_IMAGE}");
                 background-position: center right;
                 background-size: cover;
@@ -292,7 +344,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .profile-table-header,
             .profile-table-row {{
                 align-items: center;
-                border-bottom: 1px solid color-mix(in srgb, var(--app-text) 14%, transparent);
+                border: 1px solid var(--table-border);
                 display: grid;
                 gap: 0.75rem;
                 grid-template-columns: minmax(130px, 1.2fr) minmax(110px, 1fr) minmax(120px, 1.1fr) minmax(100px, 1fr) minmax(120px, 1fr) minmax(145px, 0.9fr);
@@ -301,6 +353,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             .profile-table-header {{
+                background: var(--table-header-background);
                 color: var(--app-text);
                 font-size: 0.75rem;
                 font-weight: 700;
@@ -310,6 +363,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             .profile-table-row {{
+                border-top: 0;
                 color: var(--app-text);
                 font-size: 0.9rem;
             }}
@@ -324,6 +378,18 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .profile-actions {{
                 display: flex;
                 gap: 0.35rem;
+            }}
+
+            [data-testid="stVerticalBlockBorderWrapper"] {{
+                background: color-mix(in srgb, var(--app-surface) 72%, transparent) !important;
+                border: 1px solid var(--table-border) !important;
+                border-radius: 10px !important;
+                box-shadow: 0 0 0 1px color-mix(in srgb, var(--table-border) 35%, transparent) inset !important;
+                margin-bottom: 0.45rem;
+            }}
+
+            [data-testid="stVerticalBlockBorderWrapper"] > div {{
+                border: 0 !important;
             }}
 
             .assistant-card {{
@@ -398,17 +464,46 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
     )
 
 
-def get_openai_api_key():
+def get_openai_setting(name):
     try:
-        return (
-            st.secrets.get("OPENAI_API_KEY")
-            or os.getenv("OPENAI_API_KEY")
-            or st.session_state.get("openai_api_key_input")
-        )
+        openai_secrets = st.secrets.get("openai", {})
+        if hasattr(openai_secrets, "get"):
+            value = openai_secrets.get(name)
+            if value:
+                return value
+        return st.secrets.get(name.upper()) or st.secrets.get(name)
     except FileNotFoundError:
-        return os.getenv("OPENAI_API_KEY") or st.session_state.get(
-            "openai_api_key_input"
-        )
+        return None
+
+
+def get_openai_api_key():
+    return (
+        get_openai_setting("api_key")
+        or os.getenv("OPENAI_API_KEY")
+        or st.session_state.get("openai_api_key_input")
+    )
+
+
+def get_openai_model():
+    return get_openai_setting("model") or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+
+def get_ai_model(api_key):
+    configured_model = get_openai_model()
+    if api_key.startswith("gsk_") and configured_model == "gpt-4o-mini":
+        return "openai/gpt-oss-120b"
+    return configured_model
+
+
+def get_ai_base_url(api_key):
+    configured_base_url = (
+        get_openai_setting("base_url") or os.getenv("OPENAI_BASE_URL")
+    )
+    if configured_base_url:
+        return configured_base_url
+    if api_key.startswith("gsk_"):
+        return "https://api.groq.com/openai/v1"
+    return None
 
 
 def get_ai_response(messages):
@@ -422,9 +517,13 @@ def get_ai_response(messages):
     try:
         from openai import OpenAI
 
-        client = OpenAI(api_key=api_key)
+        client_options = {"api_key": api_key}
+        base_url = get_ai_base_url(api_key)
+        if base_url:
+            client_options["base_url"] = base_url
+        client = OpenAI(**client_options)
         response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            model=get_ai_model(api_key),
             messages=[
                 {
                     "role": "system",
@@ -440,6 +539,156 @@ def get_ai_response(messages):
         return response.choices[0].message.content
     except Exception as error:
         return f"I could not reach OpenAI right now: {error}"
+
+
+def create_consultation_pdf(question, answer):
+    pdf_buffer = BytesIO()
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "ConsultationTitle",
+        parent=styles["Title"],
+        fontName="Helvetica-Bold",
+        fontSize=16,
+        leading=20,
+        alignment=TA_LEFT,
+        spaceAfter=18,
+    )
+    section_style = ParagraphStyle(
+        "ConsultationSection",
+        parent=styles["Heading2"],
+        fontName="Helvetica-Bold",
+        fontSize=12,
+        leading=15,
+        spaceBefore=8,
+        spaceAfter=6,
+    )
+    heading_style = ParagraphStyle(
+        "ConsultationHeading",
+        parent=styles["Heading3"],
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=13,
+        spaceBefore=6,
+        spaceAfter=3,
+    )
+    body_style = ParagraphStyle(
+        "ConsultationBody",
+        parent=styles["BodyText"],
+        fontName="Helvetica",
+        fontSize=10,
+        leading=14,
+        spaceAfter=6,
+    )
+    bullet_style = ParagraphStyle(
+        "ConsultationBullet",
+        parent=body_style,
+        leftIndent=14,
+        firstLineIndent=-8,
+    )
+    table_header_style = ParagraphStyle(
+        "ConsultationTableHeader",
+        parent=body_style,
+        fontName="Helvetica-Bold",
+        spaceAfter=0,
+    )
+
+    def is_table_separator(line):
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
+
+    def parse_table_row(line):
+        return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+    def inline_markdown(value):
+        value = escape(value.encode("latin-1", "replace").decode("latin-1"))
+        value = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", value)
+        value = re.sub(r"__(.+?)__", r"<b>\1</b>", value)
+        value = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<i>\1</i>", value)
+        return value
+
+    def markdown_flowables(markdown_text):
+        flowables = []
+        lines = markdown_text.splitlines()
+        line_index = 0
+        while line_index < len(lines):
+            raw_line = lines[line_index]
+            line = raw_line.strip()
+            if not line:
+                flowables.append(Spacer(1, 5))
+                line_index += 1
+                continue
+            if (
+                "|" in line
+                and line_index + 1 < len(lines)
+                and is_table_separator(lines[line_index + 1])
+            ):
+                table_rows = [parse_table_row(line)]
+                line_index += 2
+                while line_index < len(lines) and "|" in lines[line_index]:
+                    table_rows.append(parse_table_row(lines[line_index]))
+                    line_index += 1
+                column_count = max(len(row) for row in table_rows)
+                normalized_rows = [
+                    row + [""] * (column_count - len(row)) for row in table_rows
+                ]
+                table_data = [
+                    [
+                        Paragraph(inline_markdown(cell), table_header_style if row_index == 0 else body_style)
+                        for cell in row
+                    ]
+                    for row_index, row in enumerate(normalized_rows)
+                ]
+                table = Table(
+                    table_data,
+                    colWidths=[(letter[0] - 108) / column_count] * column_count,
+                    repeatRows=1,
+                    hAlign="LEFT",
+                    spaceBefore=6,
+                    spaceAfter=10,
+                )
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eaf2ec")),
+                            ("GRID", (0, 0), (-1, -1), 0.6, colors.HexColor("#8da394")),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                            ("TOPPADDING", (0, 0), (-1, -1), 5),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                        ]
+                    )
+                )
+                flowables.append(table)
+                continue
+            heading_match = re.match(r"^#{1,6}\s*(.*)$", line)
+            if heading_match:
+                flowables.append(Paragraph(inline_markdown(heading_match.group(1)), heading_style))
+            elif re.match(r"^[-*]\s+", line):
+                bullet_text = re.sub(r"^[-*]\s+", "", line)
+                flowables.append(Paragraph(f"&bull; {inline_markdown(bullet_text)}", bullet_style))
+            else:
+                flowables.append(Paragraph(inline_markdown(line), body_style))
+            line_index += 1
+        return flowables
+
+    document = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=letter,
+        leftMargin=54,
+        rightMargin=54,
+        topMargin=54,
+        bottomMargin=54,
+    )
+    story = [
+        Paragraph("AgriDSS AI - Latest Agronomist Consultation", title_style),
+        Paragraph("Question", section_style),
+        Paragraph(inline_markdown(question), body_style),
+        Paragraph("Answer", section_style),
+        *markdown_flowables(answer),
+    ]
+    document.build(story)
+    return pdf_buffer.getvalue()
 
 
 # ---------------------------------------------------------
@@ -560,6 +809,9 @@ def edit_farmer_profile(profile_index):
     )
     st.session_state.profile_location = profile.get("Location", "")
     st.session_state.profile_farm_size = int(profile.get("Farm Size", 0))
+    st.session_state.profile_soil_type = profile.get(
+        "Soil Type", "Select soil type"
+    )
     st.session_state.profile_crop = profile.get("Primary Crop", "Wheat")
     st.session_state.profile_irrigation = profile.get(
         "Irrigation", "Rain-fed"
@@ -577,6 +829,7 @@ def clear_profile_form():
     st.session_state.profile_growth_stage = ""
     st.session_state.profile_location = ""
     st.session_state.profile_farm_size = 0.0
+    st.session_state.profile_soil_type = "Select soil type"
     st.session_state.profile_crop = "Wheat"
     st.session_state.profile_irrigation = "Rain-fed"
     st.session_state.profile_experience = 0
@@ -639,6 +892,17 @@ if st.session_state.show_background_picker:
         key="background_color_name",
         on_change=apply_selected_background_color,
     )
+
+if get_openai_api_key():
+    st.sidebar.caption("OpenAI API: configured")
+else:
+    st.sidebar.text_input(
+        "OpenAI API key (optional)",
+        type="password",
+        key="openai_api_key_input",
+        help="Used for this session only when no Streamlit secret or environment variable is configured.",
+    )
+    st.sidebar.caption("OpenAI API: not configured")
 
 apply_app_theme(
     st.session_state.background_color,
@@ -765,18 +1029,25 @@ elif page == "Farmer Profile":
         with col1:
 
             farmer_name = st.text_input("Farmer Name", key="profile_farmer_name")
-            growth_stage = st.text_input(
-                "Crop Growth Stage",
-                key="profile_growth_stage",
-            )
             location = st.text_input("Farm Location", key="profile_location")
             farm_size = st.selectbox(
                 "Farm Size (acres)",
                 FARM_SIZE_OPTIONS,
                 key="profile_farm_size",
             )
+            soil_type = st.selectbox(
+                "Soil Type",
+                SOIL_TYPE_OPTIONS,
+                key="profile_soil_type",
+            )
 
         with col2:
+
+            growth_stage = st.selectbox(
+                "Crop Growth Stage",
+                CROP_GROWTH_STAGE_OPTIONS,
+                key="profile_growth_stage",
+            )
 
             crop = st.selectbox(
                 "Primary Crop",
@@ -837,6 +1108,7 @@ elif page == "Farmer Profile":
                 "Crop Growth Stage": growth_stage,
                 "Location": location,
                 "Farm Size": farm_size,
+                "Soil Type": soil_type,
                 "Primary Crop": crop,
                 "Irrigation": irrigation,
                 "Experience": experience,
@@ -870,9 +1142,9 @@ elif page == "Farmer Profile":
         st.subheader("Saved Farmer Profiles")
         table_columns = [
             "Farmer Name",
-            "Crop Growth Stage",
             "Location",
             "Farm Size (acres)",
+            "Soil Type",
         ]
         with st.container(border=True):
             header_columns = st.columns(
@@ -894,9 +1166,9 @@ elif page == "Farmer Profile":
                 )
                 row_values = [
                     profile_name,
-                    saved_profile.get("Crop Growth Stage", ""),
                     saved_profile.get("Location", ""),
                     f"{saved_profile.get('Farm Size', 0):g} acres",
+                    saved_profile.get("Soil Type", "Select soil type"),
                 ]
                 for row_column, value in zip(row_columns[:4], row_values):
                     row_column.write(value)
@@ -987,11 +1259,7 @@ elif page == "AI Chat":
 
     st.title("AI Agricultural Assistant")
 
-    st.write(
-        "Ask your AI Agronomist about crops, irrigation, fertilizer, pests, diseases, or crop management."
-    )
-
-    st.subheader("🌱 Ask Your AI Agronomist")
+    st.subheader("🌱 Focused Agronomist Consultation")
     st.write(
         "Ask about crops, irrigation, fertilizer, pests, diseases, or farm management."
     )
@@ -1019,12 +1287,6 @@ elif page == "AI Chat":
             icon=":material/chat:",
         )
 
-    # Display existing messages
-    for message in st.session_state.messages:
-
-        with st.chat_message(message["role"]):
-            st.write(message["content"])
-
     prompt = st.chat_input(
         "Ask an agricultural question..."
     )
@@ -1039,9 +1301,6 @@ elif page == "AI Chat":
             }
         )
 
-        with st.chat_message("user"):
-            st.write(prompt)
-
         response = get_ai_response(st.session_state.messages)
 
         st.session_state.messages.append(
@@ -1051,5 +1310,35 @@ elif page == "AI Chat":
             }
         )
 
-        with st.chat_message("assistant"):
-            st.write(response)
+    st.caption("Showing your latest consultation. Previous exchanges remain saved.")
+    latest_messages = st.session_state.messages[-2:]
+    for message in latest_messages:
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
+
+    if latest_messages:
+        latest_question = next(
+            (
+                message["content"]
+                for message in latest_messages
+                if message["role"] == "user"
+            ),
+            "",
+        )
+        latest_answer = next(
+            (
+                message["content"]
+                for message in latest_messages
+                if message["role"] == "assistant"
+            ),
+            "",
+        )
+        download_content = create_consultation_pdf(latest_question, latest_answer)
+        st.download_button(
+            "Download latest result",
+            data=download_content,
+            file_name="agridss-latest-consultation.pdf",
+            mime="application/pdf",
+            icon=":material/download:",
+            width="stretch",
+        )

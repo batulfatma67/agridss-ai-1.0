@@ -4,14 +4,21 @@ Generative AI-powered agricultural assistant using RAG to provide personalized, 
 ## OpenAI setup
 
 Install the dependencies, then configure your OpenAI API key before starting
-Streamlit:
+Streamlit. For local development, copy `.streamlit/secrets.toml.example` to
+`.streamlit/secrets.toml` and replace the placeholder with your key:
 
 ```powershell
 pip install -r requirements.txt
-$env:OPENAI_API_KEY = "your-api-key"
 streamlit run app.py
 ```
 
-For Streamlit Community Cloud, add `OPENAI_API_KEY` under the app's Secrets
-settings. The app uses `gpt-4o-mini` by default; set `OPENAI_MODEL` to use a
-different available model.
+The app reads `OPENAI_API_KEY` and `OPENAI_MODEL` from Streamlit secrets. It
+also accepts the `OPENAI_API_KEY` and `OPENAI_MODEL` environment variables. If
+neither is configured, the sidebar provides a masked, session-only key field.
+Groq keys beginning with `gsk_` are routed automatically to Groq's
+OpenAI-compatible API and use `openai/gpt-oss-120b` by default.
+
+For Streamlit Community Cloud, paste the contents of the template into the
+app's **Settings > Secrets** panel and replace the placeholder. The app uses
+`gpt-4o-mini` by default; set `OPENAI_MODEL` to use a different available
+model.
