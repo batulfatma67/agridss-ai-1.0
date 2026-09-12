@@ -80,9 +80,6 @@ def apply_app_theme(background_color, night_mode, compact_page):
     surface_color = "#173524" if night_mode else "#ffffff"
     sidebar_color = darken_color(app_background)
     text_color = get_text_color(background_color, night_mode)
-    background_overlay = (
-        "rgba(7, 24, 14, 0.72)" if night_mode else "rgba(242, 249, 243, 0.78)"
-    )
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
@@ -118,13 +115,6 @@ def apply_app_theme(background_color, night_mode, compact_page):
             [data-testid="stMain"],
             [data-testid="stMainBlockContainer"] {{
                 background-color: var(--app-background) !important;
-                background-image: linear-gradient(
-                    {background_overlay},
-                    {background_overlay}
-                ), url("{AGRICULTURE_HERO_IMAGE}") !important;
-                background-position: center;
-                background-size: cover;
-                background-attachment: fixed;
             }}
 
             [data-testid="stSidebar"],
@@ -204,11 +194,13 @@ def apply_app_theme(background_color, night_mode, compact_page):
             .home-hero {{
                 background-image: linear-gradient(
                     90deg,
-                    color-mix(in srgb, var(--app-surface) 96%, transparent),
-                    color-mix(in srgb, var(--app-surface) 72%, transparent)
+                    rgba(255, 255, 255, 0.98) 0%,
+                    rgba(255, 255, 255, 0.88) 42%,
+                    rgba(255, 255, 255, 0.18) 100%
                 ), url("{AGRICULTURE_HERO_IMAGE}");
-                background-position: center;
+                background-position: center right;
                 background-size: cover;
+                overflow: hidden;
                 border: 1px solid rgba(30, 74, 48, 0.18);
                 border-radius: 16px;
                 min-height: 16rem;
