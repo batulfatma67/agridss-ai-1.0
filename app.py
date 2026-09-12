@@ -462,7 +462,7 @@ def get_openai_model():
 def get_ai_model(api_key):
     configured_model = get_openai_model()
     if api_key.startswith("gsk_") and configured_model == "gpt-4o-mini":
-        return "llama-3.3-70b-versatile"
+        return "openai/gpt-oss-120b"
     return configured_model
 
 
