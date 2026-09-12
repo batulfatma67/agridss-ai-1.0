@@ -1133,6 +1133,38 @@ elif page == "AI Chat":
         )
 
     st.caption("Showing your latest consultation. Previous exchanges remain saved.")
-    for message in st.session_state.messages[-2:]:
+    latest_messages = st.session_state.messages[-2:]
+    for message in latest_messages:
         with st.chat_message(message["role"]):
             st.write(message["content"])
+
+    if latest_messages:
+        latest_question = next(
+            (
+                message["content"]
+                for message in latest_messages
+                if message["role"] == "user"
+            ),
+            "",
+        )
+        latest_answer = next(
+            (
+                message["content"]
+                for message in latest_messages
+                if message["role"] == "assistant"
+            ),
+            "",
+        )
+        download_content = (
+            "AgriDSS AI - Latest Agronomist Consultation\n\n"
+            f"Question\n{latest_question}\n\n"
+            f"Answer\n{latest_answer}\n"
+        )
+        st.download_button(
+            "Download latest result",
+            data=download_content,
+            file_name="agridss-latest-consultation.txt",
+            mime="text/plain",
+            icon=":material/download:",
+            width="stretch",
+        )
