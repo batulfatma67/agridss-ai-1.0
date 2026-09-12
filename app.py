@@ -435,17 +435,28 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
     )
 
 
-def get_openai_api_key():
+def get_openai_setting(name):
     try:
-        return (
-            st.secrets.get("OPENAI_API_KEY")
-            or os.getenv("OPENAI_API_KEY")
-            or st.session_state.get("openai_api_key_input")
-        )
+        openai_secrets = st.secrets.get("openai", {})
+        if hasattr(openai_secrets, "get"):
+            value = openai_secrets.get(name)
+            if value:
+                return value
+        return st.secrets.get(name.upper()) or st.secrets.get(name)
     except FileNotFoundError:
-        return os.getenv("OPENAI_API_KEY") or st.session_state.get(
-            "openai_api_key_input"
-        )
+        return None
+
+
+def get_openai_api_key():
+    return (
+        get_openai_setting("api_key")
+        or os.getenv("OPENAI_API_KEY")
+        or st.session_state.get("openai_api_key_input")
+    )
+
+
+def get_openai_model():
+    return get_openai_setting("model") or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 
 def get_ai_response(messages):
@@ -461,7 +472,7 @@ def get_ai_response(messages):
 
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            model=get_openai_model(),
             messages=[
                 {
                     "role": "system",
@@ -676,6 +687,17 @@ if st.session_state.show_background_picker:
         key="background_color_name",
         on_change=apply_selected_background_color,
     )
+
+if get_openai_api_key():
+    st.sidebar.caption("OpenAI API: configured")
+else:
+    st.sidebar.text_input(
+        "OpenAI API key (optional)",
+        type="password",
+        key="openai_api_key_input",
+        help="Used for this session only when no Streamlit secret or environment variable is configured.",
+    )
+    st.sidebar.caption("OpenAI API: not configured")
 
 apply_app_theme(
     st.session_state.background_color,
