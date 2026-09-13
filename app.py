@@ -1,7 +1,9 @@
+import base64
 import json
 import os
 import re
 from datetime import datetime
+from html import escape as html_escape
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -54,6 +56,15 @@ AGRICULTURE_HERO_IMAGE = (
     "https://images.unsplash.com/photo-1492496913980-501348b61469"
     "?auto=format&fit=crop&w=2400&q=95&dpr=2"
 )
+AGRICULTURE_HERO_IMAGE_FILE = (
+    Path(__file__).resolve().parent / "data" / "agriculture-wallpaper.png"
+)
+AGRICULTURE_WALLPAPER_IMAGE = AGRICULTURE_HERO_IMAGE
+if AGRICULTURE_HERO_IMAGE_FILE.exists():
+    AGRICULTURE_WALLPAPER_IMAGE = (
+        "data:image/png;base64,"
+        + base64.b64encode(AGRICULTURE_HERO_IMAGE_FILE.read_bytes()).decode("ascii")
+    )
 AGRICULTURE_SCOPE_TERMS = {
     "agriculture",
     "agronom",
@@ -194,6 +205,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
                 --app-primary: #2f7d4a;
                 --app-secondary: #1f5c3a;
                 --app-accent: #d6a72c;
+                --app-wallpaper: url("{AGRICULTURE_WALLPAPER_IMAGE}");
                 --hero-overlay-start: {hero_overlay_start};
                 --hero-overlay-mid: {hero_overlay_mid};
                 --hero-overlay-end: {hero_overlay_end};
@@ -205,6 +217,13 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             [data-testid="stMain"],
             [data-testid="stMainBlockContainer"] {{
                 background-color: var(--app-background) !important;
+                background-image: linear-gradient(
+                    rgba(240, 247, 241, 0.82),
+                    rgba(240, 247, 241, 0.82)
+                ), var(--app-wallpaper) !important;
+                background-attachment: fixed;
+                background-position: center;
+                background-size: cover;
             }}
 
             [data-testid="stSidebar"],
@@ -478,6 +497,20 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             .assistant-action button {{
                 font-size: 0.78rem;
                 text-transform: capitalize;
+            }}
+
+            .chat-profile-label {{
+                color: var(--app-text);
+                font-size: 0.78rem;
+                font-weight: 800;
+                margin-bottom: 0.15rem;
+            }}
+
+            .chat-profile-value {{
+                color: var(--app-text);
+                font-size: 0.86rem;
+                font-weight: 400;
+                line-height: 1.25;
             }}
 
             .question-list {{
@@ -1377,6 +1410,32 @@ elif page == "Farmer Profile":
 elif page == "AI Chat":
 
     st.title("AI Agricultural Assistant")
+
+    current_profile = st.session_state.get("farmer_profile") or {}
+    if current_profile:
+        st.markdown("#### Current Farmer Profile")
+        with st.container(border=True):
+            profile_columns = st.columns(6, gap="small")
+            profile_summary = [
+                ("Farmer", current_profile.get("Farmer Name", "Not set")),
+                ("Crop", current_profile.get("Primary Crop", "Not set")),
+                ("Location", current_profile.get("Location", "Not set")),
+                (
+                    "Growth Stage",
+                    current_profile.get("Crop Growth Stage", "Not set"),
+                ),
+                ("Soil Type", current_profile.get("Soil Type", "Not set")),
+                ("Irrigation", current_profile.get("Irrigation", "Not set")),
+            ]
+            for profile_column, (label, value) in zip(
+                profile_columns, profile_summary
+            ):
+                with profile_column:
+                    st.markdown(
+                        f'<div class="chat-profile-label">{html_escape(label)}</div>'
+                        f'<div class="chat-profile-value">{html_escape(str(value))}</div>',
+                        unsafe_allow_html=True,
+                    )
 
     st.subheader("🌱 Focused Agronomist Consultation")
     st.write(
