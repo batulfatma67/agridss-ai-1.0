@@ -507,7 +507,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             }}
 
             .chat-profile-value {{
-                color: var(--app-text);
+                color: #000000;
                 font-size: 0.86rem;
                 font-weight: 400;
                 line-height: 1.25;
@@ -1432,7 +1432,7 @@ elif page == "AI Chat":
             ):
                 with profile_column:
                     st.markdown(
-                        f'<div class="chat-profile-label">{html_escape(label)}</div>'
+                        f'<div class="chat-profile-label">{html_escape(label.upper())}</div>'
                         f'<div class="chat-profile-value">{html_escape(str(value))}</div>',
                         unsafe_allow_html=True,
                     )
