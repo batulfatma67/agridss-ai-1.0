@@ -1,9 +1,10 @@
 [
   {
     "Farmer Name": "Muhammad Nauman",
-    "Phone": "+923008115547",
+    "Crop Growth Stage": "Select growth stage",
     "Location": "Lahore",
     "Farm Size": 30,
+    "Soil Type": "Clay",
     "Primary Crop": "Rice",
     "Irrigation": "Flood Irrigation",
     "Experience": 10,

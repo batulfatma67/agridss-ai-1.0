@@ -944,6 +944,11 @@ def show_existing_farmers():
     st.session_state.show_farmer_form = False
 
 
+def cancel_farmer_profile_edit():
+    clear_profile_form()
+    st.session_state.show_farmer_form = False
+
+
 def select_farmer_profile(profile_index):
     clear_profile_form()
     st.session_state.show_farmer_form = False
@@ -1193,11 +1198,27 @@ elif page == "Farmer Profile":
 
         st.caption("Profile data is saved only when you select Save Farmer Profile.")
         editing_index = st.session_state.get("editing_profile_index")
-        submitted = st.button(
-            "Update Farmer Profile" if editing_index is not None else "Save Farmer Profile",
-            key="save_farmer_profile",
-            width="stretch",
-        )
+        if editing_index is not None:
+            update_col, cancel_col = st.columns(2)
+            with update_col:
+                submitted = st.button(
+                    "Update Farmer Profile",
+                    key="save_farmer_profile",
+                    width="stretch",
+                )
+            with cancel_col:
+                st.button(
+                    "Cancel",
+                    key="cancel_farmer_profile_edit",
+                    width="stretch",
+                    on_click=cancel_farmer_profile_edit,
+                )
+        else:
+            submitted = st.button(
+                "Save Farmer Profile",
+                key="save_farmer_profile",
+                width="stretch",
+            )
 
         if submitted:
 
