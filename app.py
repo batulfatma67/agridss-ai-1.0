@@ -2,7 +2,9 @@ import base64
 import json
 import os
 import re
+import smtplib
 from datetime import datetime
+from email.message import EmailMessage
 from html import escape as html_escape
 from io import BytesIO
 from pathlib import Path
@@ -137,6 +139,55 @@ def save_farmer_profiles(profiles):
         temporary_path = Path(temporary_file.name)
 
     temporary_path.replace(FARMER_PROFILES_FILE)
+
+
+def get_smtp_setting(name, default=None):
+    try:
+        smtp_secrets = st.secrets.get("smtp", {})
+        if hasattr(smtp_secrets, "get"):
+            value = smtp_secrets.get(name)
+            if value is not None:
+                return value
+        return st.secrets.get(f"SMTP_{name.upper()}", default)
+    except FileNotFoundError:
+        return os.getenv(f"SMTP_{name.upper()}", default)
+
+
+def send_profile_notification(profile, action):
+    host = get_smtp_setting("host")
+    username = get_smtp_setting("username")
+    password = get_smtp_setting("password")
+    sender = get_smtp_setting("sender", username)
+    recipient = get_smtp_setting("recipient")
+    if not all((host, username, password, sender, recipient)):
+        return "not_configured"
+
+    message = EmailMessage()
+    message["Subject"] = f"AgriDSS AI: farmer profile {action}"
+    message["From"] = sender
+    message["To"] = recipient
+    message.set_content(
+        "A farmer profile was {}.\n\nFarmer: {}\nCrop: {}\nLocation: {}\n"
+        "Farm size: {} acres\nCrop growth stage: {}\nSoil type: {}".format(
+            action,
+            profile.get("Farmer Name", ""),
+            profile.get("Primary Crop", ""),
+            profile.get("Location", ""),
+            profile.get("Farm Size", ""),
+            profile.get("Crop Growth Stage", ""),
+            profile.get("Soil Type", ""),
+        )
+    )
+
+    try:
+        port = int(get_smtp_setting("port", 587))
+        with smtplib.SMTP(host, port, timeout=15) as smtp:
+            smtp.starttls()
+            smtp.login(username, password)
+            smtp.send_message(message)
+        return "sent"
+    except (OSError, smtplib.SMTPException):
+        return "failed"
 
 
 def hex_to_rgb(color):
@@ -1300,11 +1351,24 @@ elif page == "Farmer Profile":
                 st.session_state.show_farmer_form = False
                 message = "Farmer profile updated successfully."
             save_farmer_profiles(st.session_state.farmer_profiles)
+            notification_status = send_profile_notification(
+                profile,
+                "updated" if editing_index is not None else "saved",
+            )
 
             if editing_index is not None:
                 st.rerun()
 
             st.success(message)
+            if notification_status == "not_configured":
+                st.info(
+                    "Email notification not sent: configure SMTP settings in "
+                    ".streamlit/secrets.toml."
+                )
+            elif notification_status == "failed":
+                st.warning("Profile saved, but the email notification could not be sent.")
+            else:
+                st.success("Email notification sent.")
 
     if st.session_state.farmer_profiles:
 
