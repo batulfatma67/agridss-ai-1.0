@@ -14,6 +14,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_LEFT
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from src.ai_prompt_parser import SYSTEM_PROMPT_TEMPLATE
+
 
 FARMER_PROFILES_FILE = Path(__file__).resolve().parent / "data" / "farmer_profiles.json"
 FARM_SIZE_OPTIONS = list(range(0, 1001))
@@ -52,6 +54,44 @@ AGRICULTURE_HERO_IMAGE = (
     "https://images.unsplash.com/photo-1492496913980-501348b61469"
     "?auto=format&fit=crop&w=2400&q=95&dpr=2"
 )
+AGRICULTURE_SCOPE_TERMS = {
+    "agriculture",
+    "agronom",
+    "crop",
+    "farm",
+    "farmer",
+    "field",
+    "plant",
+    "soil",
+    "seed",
+    "sowing",
+    "germination",
+    "harvest",
+    "yield",
+    "irrigat",
+    "water",
+    "fertiliz",
+    "nutrient",
+    "pest",
+    "insect",
+    "weed",
+    "disease",
+    "fung",
+    "bacter",
+    "virus",
+    "maize",
+    "corn",
+    "wheat",
+    "rice",
+    "cotton",
+    "vegetable",
+    "fruit",
+    "orchard",
+    "livestock",
+    "weather",
+    "drought",
+    "frost",
+}
 
 
 def load_farmer_profiles():
@@ -506,7 +546,41 @@ def get_ai_base_url(api_key):
     return None
 
 
+def is_agriculture_question(question):
+    question_words = question.lower().split()
+    return any(
+        any(term in word for term in AGRICULTURE_SCOPE_TERMS)
+        for word in question_words
+    )
+
+
+def build_agriculture_system_prompt():
+    farmer_profile = st.session_state.get("farmer_profile") or {}
+    return SYSTEM_PROMPT_TEMPLATE.format(
+        farmer_profile=json.dumps(farmer_profile, indent=2),
+        retrieved_context=(
+            "No retrieval context is available in this chat. Do not invent "
+            "specific sources, diagnoses, treatments, or chemical recommendations."
+        ),
+    )
+
+
 def get_ai_response(messages):
+    latest_question = next(
+        (
+            message["content"]
+            for message in reversed(messages)
+            if message["role"] == "user"
+        ),
+        "",
+    )
+    if not is_agriculture_question(latest_question):
+        return (
+            "I am focused on agricultural guidance. Please ask about crops, "
+            "soil, irrigation, pests, diseases, farm management, or related "
+            "agronomy topics."
+        )
+
     api_key = get_openai_api_key()
     if not api_key:
         return (
@@ -527,11 +601,7 @@ def get_ai_response(messages):
             messages=[
                 {
                     "role": "system",
-                    "content": (
-                        "You are an expert agricultural assistant. Give practical, "
-                        "clear advice about crops, soil, irrigation, pests, diseases, "
-                        "and farm planning. Mention when local expert advice is needed."
-                    ),
+                    "content": build_agriculture_system_prompt(),
                 },
                 *messages,
             ],
