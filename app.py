@@ -611,6 +611,34 @@ def get_ai_response(messages):
         return f"I could not reach OpenAI right now: {error}"
 
 
+def is_certain_consultation(messages):
+    if len(messages) != 2:
+        return False
+    if messages[0].get("role") != "user" or messages[1].get("role") != "assistant":
+        return False
+
+    answer = messages[1].get("content", "").strip()
+    if not answer:
+        return False
+
+    known_failure_prefixes = (
+        "I could not reach OpenAI right now:",
+        "OpenAI is not configured yet.",
+        "I am focused on agricultural guidance.",
+    )
+    if answer.startswith(known_failure_prefixes):
+        return False
+
+    required_sections = (
+        "recommendation",
+        "why",
+        "actionable steps",
+        "sources",
+    )
+    normalized_answer = answer.lower()
+    return all(section in normalized_answer for section in required_sections)
+
+
 def create_consultation_pdf(question, answer):
     pdf_buffer = BytesIO()
     styles = getSampleStyleSheet()
@@ -1386,7 +1414,7 @@ elif page == "AI Chat":
         with st.chat_message(message["role"]):
             st.write(message["content"])
 
-    if latest_messages:
+    if is_certain_consultation(latest_messages):
         latest_question = next(
             (
                 message["content"]
