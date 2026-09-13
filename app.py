@@ -51,6 +51,13 @@ BACKGROUND_COLORS = {
     "Soft green": "#F0F7F1",
     "White": "#FFFFFF",
     "Light gray": "#F5F7F6",
+    "Mint": "#E5F3EA",
+    "Sage": "#DCEBDD",
+    "Pale blue": "#EAF3F8",
+    "Warm ivory": "#FFFDF2",
+    "Sand": "#F4EFE4",
+    "Lavender gray": "#F0F0F5",
+    "Pale peach": "#FFF0E8",
 }
 AGRICULTURE_HERO_IMAGE = (
     "https://images.unsplash.com/photo-1492496913980-501348b61469"
@@ -175,6 +182,11 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
     hero_overlay_end = (
         "rgba(37, 45, 51, 0.35)" if night_mode else "rgba(47, 125, 74, 0.22)"
     )
+    wallpaper_overlay = (
+        "rgba(37, 45, 51, 0.92)"
+        if night_mode
+        else f"color-mix(in srgb, {background_color} 82%, transparent)"
+    )
     compact_styles = """
             [data-testid="stMainBlockContainer"] {
                 max-width: 1100px;
@@ -209,6 +221,7 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
                 --hero-overlay-start: {hero_overlay_start};
                 --hero-overlay-mid: {hero_overlay_mid};
                 --hero-overlay-end: {hero_overlay_end};
+                --wallpaper-overlay: {wallpaper_overlay};
             }}
 
             [data-testid="stApp"],
@@ -218,8 +231,8 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             [data-testid="stMainBlockContainer"] {{
                 background-color: var(--app-background) !important;
                 background-image: linear-gradient(
-                    rgba(240, 247, 241, 0.82),
-                    rgba(240, 247, 241, 0.82)
+                    var(--wallpaper-overlay),
+                    var(--wallpaper-overlay)
                 ), var(--app-wallpaper) !important;
                 background-attachment: fixed;
                 background-position: center;
@@ -307,6 +320,10 @@ def apply_app_theme(background_color, night_mode, compact_page, home_page):
             [data-testid="stSidebar"] [data-baseweb="select"] {{
                 color: var(--app-sidebar-text);
                 background-color: var(--app-surface);
+            }}
+
+            [data-testid="stVerticalBlockBorderWrapper"] {{
+                background: var(--app-surface) !important;
             }}
 
             .home-clock {{
@@ -899,9 +916,11 @@ def close_background_picker():
 
 
 def apply_selected_background_color():
-    st.session_state.background_color = BACKGROUND_COLORS[
-        st.session_state.background_color_name
-    ]
+    selected_name = st.session_state.get("background_color_name", "Soft green")
+    st.session_state.background_color = BACKGROUND_COLORS.get(
+        selected_name,
+        BACKGROUND_COLORS["Soft green"],
+    )
     st.session_state.show_background_picker = False
 
 
